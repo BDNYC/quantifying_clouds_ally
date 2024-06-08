@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.pylab as pl
 import numpy as np
+import numpy.ma as ma
 from scipy import stats
 import matplotlib.ticker as mticker
 
@@ -25,97 +26,15 @@ norm_f = mpl.colors.SymLogNorm(linthresh=4, vmin=min(fsed_num)-.15,
 
 
 
-def plot_parameter_vs_logg_fsed(ax1, ax2, parameter, logg, fsed, param_name, lines = False):
-    """
-    Plots a given parameter against two variables, `logg` and `fsed`, on separate matplotlib axes.
 
-    Parameters:
-    ax1 (matplotlib.axes._subplots.AxesSubplot): The first axis to plot `parameter` against `logg`.
-    ax2 (matplotlib.axes._subplots.AxesSubplot): The second axis to plot `parameter` against `fsed`.
-    parameter (array-like): The parameter values to be plotted.
-    logg (array-like): The log(g) values to be plotted.
-    fsed (array-like): The log(g) values to be plotted.
-    param_name (str): The name of the parameter to be used as the y-axis label.
-    lines (bool, False): If True a line will be plotted for each individual fsed and logg grouping.
-
-    This function performs the following tasks:
-    1. Plots scatter plots of `parameter` against `logg` on `ax1` and `parameter` against `fsed` on `ax2`.
-    2. Colors the points on `ax1` based on `fsed` values and on `ax2` based on `logg` values.
-    3. Fits and plots linear regression lines for the data on both axes.
-    4. Calculates and annotates Pearson correlation coefficients on both axes.
-    5. Sets custom x-ticks and x-tick labels for both axes.
-    6. Sets the y-axis label of `ax1` to `param_name`.
-
-    Example usage:
-    ```
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    plot_parameter(ax1, ax2, df['parameter'], 'Parameter Name')
-    plt.show()
-    ```
-    """
-
-    logg_values = list(set(logg))
-    fsed_values = list(set(fsed))
-
-    # plotting each point individually to assign the correct color
-    for i in range(len(logg)):
-        ax1.scatter(logg[i], parameter[i],
-                    color=fsed_colors(norm_f(fsed[i])), marker='x')
-        ax2.scatter(fsed[i], parameter[i],
-                    color=logg_colors(norm_g(logg[i])), marker='x')
-        
-    # creating line on the first plot
-    m, b = np.polyfit(logg, parameter, 1)
-    ax1.plot(logg, logg*m + b, color='k',
-             linewidth=.7, alpha=1, label=f'{m:.2}x + {b:.2}')
-    # writing pearson r value of the line at the top of each graph
-    r1 = stats.pearsonr(logg, parameter)[0]
-    ax1.annotate(f"r = {r1:.2}", xy=(1, 0.99),
-                 ha='right', va='top',
-                 fontsize=10,
-                 xycoords='axes fraction', color='k')
-
-    # creating line on the second plot
-    m, b = np.polyfit(fsed, parameter, 1)
-    ax2.plot(fsed, fsed*m + b, color='k',
-             linewidth=.7, alpha=0.5, label=f'{m:.2}x + {b:.2}')
-    # writing pearson r value of the line at the top of each graph
-    r2 = stats.pearsonr(fsed, parameter)[0]
-    ax2.annotate(f"r = {r2:.2}", xy=(1, 0.99),
-                 ha='right', va='top',
-                 fontsize=10,
-                 xycoords='axes fraction', color='k')
-    
-    # plotting the lines for each logg and fsed value grouping 
-    if lines:
-        for grav in logg_values:
-            m, b = np.polyfit(fsed[logg == grav], parameter[logg == grav] , 1)
-            ax2.plot(fsed, fsed*m + b, color=logg_colors(norm_g(grav)),
-                        linewidth=.7, alpha=.5)
-        for f in fsed_values:
-            m, b = np.polyfit(logg[fsed == f], parameter[fsed == f] , 1)
-            ax1.plot(logg, logg*m + b, color=fsed_colors(norm_f(f)),
-                        linewidth=.7, alpha=.5)
-
-    # creating custom x-ticks 
-    ax1.set_xticks(logg_num)
-    ax1.set_xticklabels([None for i in logg_num])
-
-    ax2.set_xticks(fsed_num)
-    ax2.set_xticklabels([None for i in fsed_num])
-
-    ax1.set_ylabel(param_name)
-
-
-
-def long_plot(df_sources, convolve_data_dict, x_min = 1.16, x_max = 1.185, 
+def long_plot(parameter_df, convolve_data_dict, x_min = 1.16, x_max = 1.185, 
                   x_increment = 0.005, const_spacing = 1.5, norm_scaling = 7e10,
                   title = "Potassium Doublets", color_by_logg = True):
     """
     Plots normalized and convolved spectral data with annotations and color-coding.
 
     Parameters:
-    df_sources (pandas.DataFrame): DataFrame containing the sources and their parameters.
+    parameter_df (pandas.DataFrame): DataFrame containing the sources and their parameters.
                                    It should have columns 'name', 'logg', and 'clouds'.
     convolve_data_dict (dict): Dictionary containing convolved spectral data arrays. 
                                Keys are source names, and values are numpy arrays with shape (3, length),
@@ -142,19 +61,27 @@ def long_plot(df_sources, convolve_data_dict, x_min = 1.16, x_max = 1.185,
     8. Adds a color bar indicating the parameter used for color-coding.
     """
     if color_by_logg:
-        index = df_sources.sort_values(
+        index = parameter_df.sort_values(
             by=['clouds', 'logg']).index.to_numpy()  # order of spectra plotted
     else:
-        index = df_sources.sort_values(by=['logg', 'clouds']).index.to_numpy()
+        index = parameter_df.sort_values(by=['logg', 'clouds']).index.to_numpy()
+
+    num_of_spectra = len(parameter_df)
 
     label_loc_l = []  # where left label located on y axis
     label_loc_r = []  # where right label located on y axis
+    # max and min point of spectra used for spacing purposes
+    top_of_spectra = np.zeros(num_of_spectra) # max point in the spectra
+    bottom_of_spectra = np.zeros(num_of_spectra) # max point in the spectra
+
+
 
     if color_by_logg:
-        const = [(i*const_spacing) + const_spacing*(i//5)
-                for i in range(30)]  # constants to be added to flux
+        const = [(i*const_spacing) + 1.5*const_spacing*(i//5)
+                 for i in range(num_of_spectra)]  # constants to be added to flux
     else:
-        const = [(i*const_spacing) + 1.5*const_spacing*(i//6) for i in range(30)]
+        const = [(i*const_spacing) + 1.5*const_spacing*(i//6) 
+                 for i in range(num_of_spectra)] # constants to be added to flux
 
     fig, ax = plt.subplots(figsize=(6, 16))
 
@@ -162,10 +89,10 @@ def long_plot(df_sources, convolve_data_dict, x_min = 1.16, x_max = 1.185,
     for n, i in enumerate(index):
         # setting constants, labels, color needed
         if color_by_logg:
-            color = logg_colors(norm_g(df_sources.logg[i]))
+            color = logg_colors(norm_g(parameter_df.logg[i]))
         else:
-            color = fsed_colors(norm_f(df_sources.clouds[i]))
-        name = df_sources.name[i]
+            color = fsed_colors(norm_f(parameter_df.clouds[i]))
+        name = parameter_df.name[i]
         c = const[n]
 
         # normalizing
@@ -173,6 +100,12 @@ def long_plot(df_sources, convolve_data_dict, x_min = 1.16, x_max = 1.185,
 
         # plotting
         ax.plot(convolve_data_dict[name][0, :], norm + c, alpha=1, color=color)
+
+        # getting y max and y min of plotted values
+        region = ma.masked_inside(convolve_data_dict[name][0, :], x_min, x_max).mask
+        plotted_flux = (norm + c)[region]
+        top_of_spectra[n] = max(plotted_flux)
+        bottom_of_spectra[n] = min(plotted_flux)
 
         # adding label for avg(A) and avg(FWHM)
         l_index = np.where(np.isclose(convolve_data_dict[name][0, :], x_min))[
@@ -182,21 +115,23 @@ def long_plot(df_sources, convolve_data_dict, x_min = 1.16, x_max = 1.185,
         label_loc_r.append(norm[r_index] + c)   # y axis location for labels
         label_loc_l.append(norm[l_index] + c)
 
-        A_label = f' {-(df_sources.A1[i] + df_sources.A2[i]) / 1e11:.2f}'  # string of A
+        A_label = f' {-parameter_df.A1[i] / 1e11:.2f}'  # string of A
         ax.annotate(A_label,
                     xy=(x_max, label_loc_r[n]), xycoords='data', color=color)
-        FWHM_label = f'{df_sources.FWHM1[i]*1e3:.2f} '  # string for FWHM
+        FWHM_label = f'{parameter_df.FWHM1[i]*1e3:.2f} '  # string for FWHM
         ax.annotate(FWHM_label, horizontalalignment='right',
                     xy=(x_min, label_loc_l[n]), xycoords='data', color=color)
 
+        
 
     # setting limits
-    y_max = max(label_loc_r)+2  # right side generally larger of 2
-    y_min = min(label_loc_l)-2
+    y_max = max(top_of_spectra) + const_spacing
+    y_min =  min(bottom_of_spectra) - const_spacing / 2
     # limits in x and y
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
 
+    ## Configuring plot aesthetics
     # setting ticks
     ax.set_yticks([n for n in range(int(y_min), int(y_max) + 1)])  # y-ticks
     # creating blank label in y
@@ -225,51 +160,57 @@ def long_plot(df_sources, convolve_data_dict, x_min = 1.16, x_max = 1.185,
                 ha='right',
                 va='top',
                 xycoords='data', color='k')
-
-    ax.annotate(r"  $avg(\sigma)$" "\n  FWHM \n", xy=(x_max, y_max),
+    
+    ax.annotate(r"  $avg(\sigma)$" + "\n  FWHM \n", xy=(x_max, y_max),
                 ha='left',
                 va='top',
                 xycoords='data', color='k')
 
-    # potassium vertical lines
-    ax.vlines([1.16935, 1.1775], ymin=y_min, ymax=y_max-1,
+    # Adding potassium doublet vertical lines and annotations
+    ax.vlines([1.16935, 1.1775], ymin=y_min, ymax=y_max - const_spacing / 2,
             linestyle='dotted', color='k', linewidth=1.2, alpha=.8)
-    ax.annotate("K I ", xy=(1.16901, y_max-1),
+    ax.annotate("K I ", xy=(1.16901, y_max - const_spacing / 2),
                 xycoords='data', color='k', fontsize=12)
-    ax.annotate("K I ", xy=(1.177062, y_max-1),
+    ax.annotate("K I ", xy=(1.177062, y_max - const_spacing / 2),
                 xycoords='data', color='k', fontsize=12)
 
 
     # horizontal lines
+    # location is defined by the top of spectra within each group
+    hline_y = []
     if color_by_logg:
-        hline_y = [label_loc_r[(i*5)-1]+.5 for i in range(1, 7)]
+        for i in range(1, 7):
+            hline_y.append(top_of_spectra[(i*5)-1] + const_spacing / 4)
+
         pretty_fsed = [' Cloudy \n $f_{sed} = 1$',
                     r' $f_{sed} = 2$', r' $f_{sed} = 3$',
                     r' $f_{sed} = 4$', r' $f_{sed} = 8$',
                     'No Clouds']
-        ax.hlines(hline_y, xmin=x_min + 0.005, xmax=x_max,  color='k')
 
         for i, y in enumerate(hline_y):
-            ax.annotate(pretty_fsed[i], xy=(x_min + 0.0001, y - .1),
-                        xycoords='data', color='k', fontsize=9)
+            ax.annotate(pretty_fsed[i], xy=(x_min + 0.0001, y ),
+                        xycoords='data', color='k', fontsize=9, va = 'center')
     else:
-        hline_y = [label_loc_r[(i*6)-1]+.5 for i in range(1, 6)]
+        for i in range(1, 6):
+            hline_y.append(top_of_spectra[(i*6)-1] + const_spacing / 4)
+
         pretty_logg = [' least dense\n'+r' $\log(g) = 3.5$',
                     r' $\log(g) = 4.0$', r' $\log(g) = 4.5$',
                     r' $\log(g) = 5.0$',
                     ' most dense \n' + r' $\log(g) = 5.5$']
-        ax.hlines(hline_y, xmin=x_min + 0.006, xmax=x_max,  color='k')
-
+        
         for i, y in enumerate(hline_y):
             ax.annotate(pretty_logg[i], xy=(x_min + 0.0001, y - .1),
-                        xycoords='data', color='k', fontsize=9)
+                        xycoords='data', color='k', fontsize=9, va = 'center')
+
+    ax.hlines(hline_y, xmin=x_min + (x_max-x_min)/4, xmax=x_max,  color='k')
 
 
     # color bar
     if color_by_logg:
         axcb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm_g, cmap=logg_colors),
                             ticks=logg_num, shrink=1, format=mticker.FixedFormatter(logg_ticks),
-                            aspect=50,  pad=.14)
+                            aspect=50,  pad=.14,  ax = ax)
         axcb.set_label(' ', fontsize=12)  # empty label
         ax.annotate(r'$\log(g)$', xy=(.9, .5), xycoords='figure fraction',
                     rotation=270, fontsize=13)  # actual color bar label
@@ -277,7 +218,7 @@ def long_plot(df_sources, convolve_data_dict, x_min = 1.16, x_max = 1.185,
     else:
         axcb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm_f, cmap=fsed_colors),
                             ticks=fsed_num, shrink=1, format=mticker.FixedFormatter(fsed_ticks),
-                            aspect=50, pad=.14)
+                            aspect=50, pad=.14,  ax = ax)
         axcb.set_label(' ', fontsize=12)  # empty label
         ax.annotate(r'$f_{sed}$', xy=(.9, .5), xycoords='figure fraction',
                     rotation=270, fontsize=13)  # actual color bar label
