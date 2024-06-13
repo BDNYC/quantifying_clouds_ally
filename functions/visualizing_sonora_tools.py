@@ -33,8 +33,9 @@ norm_g = mpl.colors.BoundaryNorm(logg_bounds, logg_colors.N, extend='max')
 
 
 def long_plot(parameter_df, convolve_data_dict, x_min = 1.16, x_max = 1.185, 
-                  x_increment = 0.005, const_spacing = 1.5, norm_scaling = 7e10,
+                  x_increment = 0.005, const_spacing = 1.5, section_spacing = 2, norm_scaling = 7e10,
                   title = "Potassium Doublets", color_by_logg = True):
+    # TODO: add doc string for new variables
     """
     Plots normalized and convolved spectral data with annotations and color-coding.
 
@@ -82,10 +83,10 @@ def long_plot(parameter_df, convolve_data_dict, x_min = 1.16, x_max = 1.185,
 
 
     if color_by_logg:
-        const = [(i*const_spacing) + 1.5*const_spacing*(i//5)
+        const = [(i*const_spacing) + section_spacing*(i//5)
                  for i in range(num_of_spectra)]  # constants to be added to flux
     else:
-        const = [(i*const_spacing) + 1.5*const_spacing*(i//6) 
+        const = [(i*const_spacing) + section_spacing*(i//6) 
                  for i in range(num_of_spectra)] # constants to be added to flux
 
     fig, ax = plt.subplots(figsize=(6, 16))
@@ -120,17 +121,17 @@ def long_plot(parameter_df, convolve_data_dict, x_min = 1.16, x_max = 1.185,
         label_loc_r.append(norm[r_index] + c)   # y axis location for labels
         label_loc_l.append(norm[l_index] + c)
 
-        A_label = f' {-parameter_df.A1[i] / 1e11:.2f}'  # string of A
+        A_label = f'{-(parameter_df.A1[i] + parameter_df.A2[i]) / 2e11 :.2f}'  # string of A
         ax.annotate(A_label,
                     xy=(x_max, label_loc_r[n]), xycoords='data', color=color)
-        FWHM_label = f'{parameter_df.FWHM1[i]*1e3:.2f} '  # string for FWHM
+        FWHM_label = f'{(parameter_df.FWHM1[i] + parameter_df.FWHM2[i]) * 1e3 :.2f} '  # string for FWHM
         ax.annotate(FWHM_label, horizontalalignment='right',
                     xy=(x_min, label_loc_l[n]), xycoords='data', color=color)
 
         
 
     # setting limits
-    y_max = max(top_of_spectra) + const_spacing
+    y_max = max(top_of_spectra) + 2*const_spacing
     y_min =  min(bottom_of_spectra) - const_spacing / 2
     # limits in x and y
     ax.set_xlim(x_min, x_max)
@@ -171,13 +172,6 @@ def long_plot(parameter_df, convolve_data_dict, x_min = 1.16, x_max = 1.185,
                 va='center',
                 xycoords='data', color='k')
 
-    # Adding potassium doublet vertical lines and annotations
-    ax.vlines([1.16935, 1.1775], ymin=y_min, ymax=y_max - const_spacing / 2,
-            linestyle='dotted', color='k', linewidth=1.2, alpha=.8)
-    ax.annotate("K I ", xy=(1.16901, y_max - const_spacing / 2),
-                xycoords='data', color='k', fontsize=12)
-    ax.annotate("K I ", xy=(1.177062, y_max - const_spacing / 2),
-                xycoords='data', color='k', fontsize=12)
 
 
     # horizontal lines
@@ -209,7 +203,16 @@ def long_plot(parameter_df, convolve_data_dict, x_min = 1.16, x_max = 1.185,
                         xycoords='data', color='k', fontsize=9, va = 'center')
 
     ax.hlines(hline_y, xmin=x_min + (x_max-x_min)/4, xmax=x_max,  color='k')
-
+    
+     # Adding potassium doublet vertical lines and annotations
+    potassium_lines = [1.16935, 1.1775, 1.2435, 1.2525]
+    ax.vlines(potassium_lines, ymin=y_min, ymax= max(hline_y) +  (const_spacing / 10) ,
+            linestyle='dotted', color='k', linewidth=1.2, alpha=.8)
+    for k in potassium_lines:
+        ax.annotate("K I", xy=(k, max(hline_y) +  (const_spacing / 10)),
+                    ha='center', va='bottom',
+                    xycoords='data', color='k', fontsize=12)
+        
 
      # color bar
     if color_by_logg:
