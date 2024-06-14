@@ -40,6 +40,7 @@ def logg_colorbar(fig, cax = None, ax = None, orientation='vertical',
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
 
+
 def plot_parameter_vs_logg_fsed(ax1, ax2, parameter, logg, fsed, param_name, lines = False):
     """
     Plots a given parameter against two variables, `logg` and `fsed`, on separate matplotlib axes.
@@ -123,3 +124,244 @@ def plot_parameter_vs_logg_fsed(ax1, ax2, parameter, logg, fsed, param_name, lin
 
 
 
+def all_parameter_plot(parameter_df, lines_TF = False, title =  'P-Voigt Parameters vs. Gravity and Clouds'):
+    """
+    Plots Pseudo-Voigt parameters against gravity (logg) and cloud sedimentation efficiency (f_sed).
+
+    This function creates a multi-panel plot with the following subplots:
+    1. Average absorption depth (A) vs. logg and f_sed.
+    2. Average Full Width at Half Maximum (FWHM) vs. logg and f_sed.
+    3. Average mixing parameter (η) vs. logg and f_sed.
+
+    Parameters:
+    -----------
+    parameter_df : pandas.DataFrame
+        DataFrame containing the Pseudo-Voigt parameters with columns:
+        'A1', 'A2', 'FWHM1', 'FWHM2', 'nu1', 'nu2', 'logg', 'clouds'.
+    lines_TF : bool, optional
+        If True, lines are added to the plots for each color grouping in each plot providing multiple lines
+        (default is False).
+    title : str, optional
+        Title of the entire plot (default is 'P-Voigt Parameters vs. Gravity and Clouds').
+
+    Returns:
+    None
+    """
+
+    fig = plt.figure(figsize=(8, 10), constrained_layout=True)
+
+    gs = fig.add_gridspec(4, 2, height_ratios=[1, 1, 1, 0.05], width_ratios=[1, 1])
+
+    ax = [[fig.add_subplot(gs[i, 0]), fig.add_subplot(gs[i, 1])] for i in range(3)]
+    ########################################################################################
+    # Plotting each data points
+    # A
+    plot_parameter_vs_logg_fsed(ax[0][0], ax[0][1], (parameter_df.A1 + parameter_df.A2)/2,
+                parameter_df.logg, parameter_df.clouds, r"$avg(A)$, Max Depth", lines = lines_TF)
+
+    # FWHM
+    plot_parameter_vs_logg_fsed(ax[1][0], ax[1][1], (parameter_df.FWHM1 + parameter_df.FWHM2)/2,
+                parameter_df.logg, parameter_df.clouds, r"$avg(\sigma)$, FWHM", lines = lines_TF)
+
+    # mixing parameter
+    plot_parameter_vs_logg_fsed(ax[2][0], ax[2][1], (parameter_df.nu1 + parameter_df.nu2)/2,
+                parameter_df.logg, parameter_df.clouds, r"$avg(η)$, Mixing Parameter", lines = lines_TF)
+
+
+    ########################################################################################
+    # labels along the bottom
+    ax[2][0].set_xlabel("Gravity")
+    ax[2][0].set_xticklabels(logg_ticks)
+
+    ax[2][1].set_xlabel(r"$f_{sed}$")
+    ax[2][1].set_xticklabels(fsed_ticks)
+
+    ########################################################################################
+    # labels along y axis
+    # Max depth
+    yticks = ax[0][0].get_yticks()
+    ylabel = list(yticks.copy()/1e11)
+    ylabel[0] = "Stronger\nabsorption\n"
+    ylabel[-1] = "Weaker\nabsorption"
+    ax[0][0].set_yticks(yticks)
+    ax[0][0].set_yticklabels(ylabel)
+    ax[0][1].set_yticks(yticks)
+    ax[0][1].set_yticklabels([None for i in ylabel])
+
+    # FWHM
+    yticks = ax[1][0].get_yticks()
+    ylabel = list(np.around(yticks.copy()/1e-3, 1))
+    ylabel[-1] = "Broader"
+    ylabel[0] = "Narrower"
+    ax[1][0].set_yticks(yticks)
+    ax[1][0].set_yticklabels(ylabel)
+    ax[1][1].set_yticks(yticks)
+    ax[1][1].set_yticklabels([None for i in ylabel])
+
+    # Mixing parameter
+    yticks = ax[2][1].get_yticks()
+    ylabel = list(np.around(yticks.copy(), 2))
+    ylabel[0] = "Less\nbroadened\n"
+    ylabel[-1] = "Broadened\nwings"
+    ax[2][0].set_yticks(yticks)
+    ax[2][0].set_yticklabels(ylabel)
+    ax[2][1].set_yticks(yticks)
+    ax[2][1].set_yticklabels([None for i in ylabel])
+
+
+    ########################################################################################
+    # Colorbar
+    cax1 = fig.add_subplot(gs[3, 1])
+    axcb = logg_colorbar(fig, cax = cax1,  orientation='horizontal')
+    axcb.set_label(r'$\log(g)$', fontsize=10)  # empty label
+
+    cax1 = fig.add_subplot(gs[3, 0])
+    axcb = fsed_colorbar(fig, cax = cax1,  orientation='horizontal')
+    axcb.set_label(r'$f_{sed}$', fontsize=10)   # empty label
+
+
+    fig.suptitle( title , fontsize=16)
+    
+
+
+# plotting each doublet separately
+def all_parameter_plot_separate(parameter_df, lines_TF = False, title =  'P-Voigt Parameters vs. Gravity and Clouds'):
+    """
+    Plots Pseudo-Voigt parameters against gravity (logg) and cloud sedimentation efficiency (f_sed).
+
+    This function creates a multi-panel plot with the following subplots:
+    1. Absorption depth (A) of each doublet vs. logg and f_sed.
+    2. Full Width at Half Maximum (FWHM) of each doublet vs. logg and f_sed.
+    3. Mixing parameter (η) of each doublet vs. logg and f_sed.
+
+    Parameters:
+    -----------
+    parameter_df : pandas.DataFrame
+        DataFrame containing the Pseudo-Voigt parameters with columns:
+        'A1', 'A2', 'FWHM1', 'FWHM2', 'nu1', 'nu2', 'logg', 'clouds'.
+    lines_TF : bool, optional
+        If True, lines are added to the plots for each color grouping in each plot providing multiple lines
+        (default is False).
+    title : str, optional
+        Title of the entire plot (default is 'P-Voigt Parameters vs. Gravity and Clouds').
+
+    Returns:
+    None
+    """
+
+    fig = plt.figure(figsize=(16, 10), constrained_layout=True)
+
+    gs = fig.add_gridspec(4, 4, height_ratios=[
+                        1, 1, 1, 0.05], width_ratios=[1, 1, 1, 1])
+
+    ax = [[fig.add_subplot(gs[i, 0]), fig.add_subplot(gs[i, 1]), fig.add_subplot(
+        gs[i, 2]), fig.add_subplot(gs[i, 3])] for i in range(3)]
+    ########################################################################################
+    # Plotting each data points
+    # A
+    # doublet 1
+    plot_parameter_vs_logg_fsed(ax[0][0], ax[0][2], parameter_df.A1,
+                parameter_df.logg, parameter_df.clouds, r"$A$, Max Depth", lines = lines_TF)
+
+    # doublet 2
+    plot_parameter_vs_logg_fsed(ax[0][1], ax[0][3], parameter_df.A2,
+                parameter_df.logg, parameter_df.clouds, r"", lines = lines_TF)
+
+
+    # FWHM
+    # doublet 1
+    plot_parameter_vs_logg_fsed(ax[1][0], ax[1][2], parameter_df.FWHM1,
+                parameter_df.logg, parameter_df.clouds, r"$\sigma$, FWHM", lines = lines_TF)
+
+    # doublet 2
+    plot_parameter_vs_logg_fsed(ax[1][1], ax[1][3], parameter_df.FWHM2,
+                parameter_df.logg, parameter_df.clouds, r"", lines = lines_TF)
+
+
+    # mixing parameter
+    # doublet 1
+    plot_parameter_vs_logg_fsed(ax[2][0], ax[2][2], parameter_df.nu1,
+                parameter_df.logg, parameter_df.clouds, r"$η$, Mixing Parameter", lines = lines_TF)
+
+    # doublet 2
+    plot_parameter_vs_logg_fsed(ax[2][1], ax[2][3], parameter_df.nu2,
+                parameter_df.logg, parameter_df.clouds, r"", lines = lines_TF)
+
+
+    ########################################################################################
+    # labels along the bottom
+    ax[2][0].set_xlabel("Gravity")
+    ax[2][0].set_xticklabels(logg_ticks)
+    ax[2][1].set_xlabel("Gravity")
+    ax[2][1].set_xticklabels(logg_ticks)
+
+    ax[2][2].set_xlabel(r"$f_{sed}$")
+    ax[2][2].set_xticklabels(fsed_ticks)
+    ax[2][3].set_xlabel(r"$f_{sed}$")
+    ax[2][3].set_xticklabels(fsed_ticks)
+
+    ########################################################################################
+    # labels along y axis # need to fix power
+    # Max depth
+    yticks = ax[0][0].get_yticks()
+    ylabel = list(yticks.copy()/1e11)
+    ylabel[0] = "stronger\nabsorption\n"
+    ylabel[-1] = "weaker\nabsorption"
+    ax[0][0].set_yticks(yticks)
+    ax[0][0].set_yticklabels(ylabel)
+    ax[0][1].set_yticks(yticks)  # setting ticks to none for the rest of the rows
+    ax[0][1].set_yticklabels([None for i in ylabel])
+    ax[0][2].set_yticks(yticks)
+    ax[0][2].set_yticklabels([None for i in ylabel])
+    ax[0][3].set_yticks(yticks)
+    ax[0][3].set_yticklabels([None for i in ylabel])
+
+    # FWHM
+    yticks = ax[1][1].get_yticks()
+    ylabel = list(np.around(yticks.copy()/1e-3, 1))
+    ylabel[0] = "broader"
+    ylabel[-1] = "narrower"
+    ax[1][0].set_yticks(yticks)
+    ax[1][0].set_yticklabels(ylabel)
+    ax[1][1].set_yticks(yticks)  # setting ticks to none for the rest of the rows
+    ax[1][1].set_yticklabels([None for i in ylabel])
+    ax[1][2].set_yticks(yticks)
+    ax[1][2].set_yticklabels([None for i in ylabel])
+    ax[1][3].set_yticks(yticks)
+    ax[1][3].set_yticklabels([None for i in ylabel])
+
+    # Mixing parameter
+    yticks = ax[2][0].get_yticks()
+    ylabel = list(np.around(yticks.copy(), 2))
+    ylabel[0] = "less\nbroadened\n"
+    ylabel[-1] = "\nbroadened\nwings"
+    ax[2][0].set_yticks(yticks)
+    ax[2][0].set_yticklabels(ylabel)
+    ax[2][1].set_yticks(yticks)  # setting ticks to none for the rest of the rows
+    ax[2][1].set_yticklabels([None for i in ylabel])
+    ax[2][2].set_yticks(yticks)
+    ax[2][2].set_yticklabels([None for i in ylabel])
+    ax[2][3].set_yticks(yticks)
+    ax[2][3].set_yticklabels([None for i in ylabel])
+
+
+    ########################################################################################
+    # Colorbar
+    cax1 = fig.add_subplot(gs[3, 2])
+    axcb = logg_colorbar(fig, cax1,  orientation='horizontal')
+    axcb.set_label(r'$\log(g)$', fontsize=10)  # empty label
+
+
+    cax1 = fig.add_subplot(gs[3, 0])
+    axcb = fsed_colorbar(fig, cax1,  orientation='horizontal')
+    axcb.set_label(r'$f_{sed}$', fontsize=10)   # empty label
+
+    ########################################################################################
+    # setting titles
+    # set doublet title
+    ax[0][0].set_title("Doublet 1")
+    ax[0][1].set_title("Doublet 2")
+    ax[0][2].set_title("Doublet 1")
+    ax[0][3].set_title("Doublet 2")
+    # figure title
+    fig.suptitle(title, fontsize=16)
