@@ -120,13 +120,12 @@ def long_plot(parameter_df, convolve_data_dict, x_min = 1.16, x_max = 1.185,
             0][0]  # x index in spectra of right side
         label_loc_r.append(norm[r_index] + c)   # y axis location for labels
         label_loc_l.append(norm[l_index] + c)
-
-        A_label = f'{-(parameter_df.A1[i] + parameter_df.A2[i]) / 2e11 :.2f}'  # string of A
+        A_label = f'{-(parameter_df.A1[i] + parameter_df.A2[i]) / 2e11 :.2f} '  # string of A
         ax.annotate(A_label,
-                    xy=(x_max, label_loc_r[n]), xycoords='data', color=color)
-        FWHM_label = f'{(parameter_df.FWHM1[i] + parameter_df.FWHM2[i]) * 1e3 :.2f} '  # string for FWHM
+                    xy=(x_max, label_loc_l[n]), xycoords='data', color=color)
+        FWHM_label = f' {(parameter_df.FWHM1[i] + parameter_df.FWHM2[i]) * 1e3 :.2f}'  # string for FWHM
         ax.annotate(FWHM_label, horizontalalignment='right',
-                    xy=(x_min, label_loc_l[n]), xycoords='data', color=color)
+                    xy=(x_min, label_loc_r[n]), xycoords='data', color=color)
 
         
 
