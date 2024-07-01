@@ -7,11 +7,7 @@ import sys
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
-loc = '/Users/allybaldelli/Desktop/AMNH-stuff/Doublet-work'
-sys.path.append(os.path.abspath(loc))
-# Importing scripts needed
-from Doublet_Quantifiers.curvefit import *
+from Doublet_Quantifier.curvefit import *
 
 
 
