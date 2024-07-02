@@ -40,6 +40,127 @@ def logg_colorbar(fig, cax = None, ax = None, orientation='vertical',
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
 
+def plot_parameter_vs_logg(ax1, parameter, logg, fsed, param_name, lines = False):
+    """
+    Plots a given parameter against two variables, `logg` and `fsed`, on separate matplotlib axes.
+
+    Parameters:
+    ax1 (matplotlib.axes._subplots.AxesSubplot): The first axis to plot `parameter` against `logg`.
+    parameter (array-like): The parameter values to be plotted.
+    logg (array-like): The log(g) values to be plotted.
+    fsed (array-like): The log(g) values to be plotted.
+    param_name (str): The name of the parameter to be used as the y-axis label.
+    lines (bool, False): If True a line will be plotted for each individual fsed and logg grouping.
+
+    This function performs the following tasks:
+    1. Plots scatter plots of `parameter` against `logg` on `ax1`.
+    2. Colors the points on `ax1` based on `fsed` values.
+    3. Fits and plots linear regression lines for the data on both axes.
+    4. Calculates and annotates Pearson correlation coefficients on both axes.
+    5. Sets custom x-ticks and x-tick labels for both axes.
+    6. Sets the y-axis label of `ax1` to `param_name`.
+
+    Example usage:
+    ```
+    fig, (ax1) = plt.subplots(1, 1, figsize=(6, 6))
+    plot_parameter(ax1, df['parameter'], 'Parameter Name')
+    plt.show()
+    ```
+    """
+
+    fsed_values = list(set(fsed))
+
+    # plotting each point individually to assign the correct color
+    for i in range(len(logg)):
+        ax1.scatter(logg[i], parameter[i],
+                    color=fsed_colors(norm_f(fsed[i])), marker='x')
+        
+    # creating line on the first plot
+    m, b = np.polyfit(logg, parameter, 1)
+    ax1.plot(logg, logg*m + b, color='k',
+             linewidth=.7, alpha=1, label=f'{m:.2}x + {b:.2}')
+    # writing pearson r value of the line at the top of each graph
+    r1 = stats.pearsonr(logg, parameter)[0]
+    ax1.annotate(f"r = {r1:.2}", xy=(1, 0.99),
+                 ha='right', va='top',
+                 fontsize=10,
+                 xycoords='axes fraction', color='k')
+
+    
+    # plotting the lines for each logg and fsed value grouping 
+    if lines:
+        for f in fsed_values:
+            m, b = np.polyfit(logg[fsed == f], parameter[fsed == f] , 1)
+            ax1.plot(logg, logg*m + b, color=fsed_colors(norm_f(f)),
+                        linewidth=.7, alpha=.5)
+
+    # creating custom x-ticks 
+    ax1.set_xticks(logg_num)
+    ax1.set_xticklabels([None for i in logg_num])
+
+    ax1.set_ylabel(param_name)
+
+def plot_parameter_vs_fsed(ax2, parameter, logg, fsed, param_name, lines = False):
+    """
+    Plots a given parameter against two variables, `logg` and `fsed`, on separate matplotlib axes.
+
+    Parameters:
+    ax1 (matplotlib.axes._subplots.AxesSubplot): The first axis to plot `parameter` against `logg`.
+    ax2 (matplotlib.axes._subplots.AxesSubplot): The second axis to plot `parameter` against `fsed`.
+    parameter (array-like): The parameter values to be plotted.
+    logg (array-like): The log(g) values to be plotted.
+    fsed (array-like): The log(g) values to be plotted.
+    param_name (str): The name of the parameter to be used as the y-axis label.
+    lines (bool, False): If True a line will be plotted for each individual fsed and logg grouping.
+
+    This function performs the following tasks:
+    1. Plots scatter plots of  `parameter` against `fsed` on `ax2`.
+    2. Colors the points on `ax2` based on `logg` values.
+    3. Fits and plots linear regression lines for the data on both axes.
+    4. Calculates and annotates Pearson correlation coefficients on both axes.
+    5. Sets custom x-ticks and x-tick labels for both axes.
+    6. Sets the y-axis label of `ax2` to `param_name`.
+
+    Example usage:
+    ```
+    fig, (ax2) = plt.subplots(1, 1, figsize=(6, 6))
+    plot_parameter(ax1, ax2, df['parameter'], 'Parameter Name')
+    plt.show()
+    ```
+    """
+
+    logg_values = list(set(logg))
+
+    # plotting each point individually to assign the correct color
+    for i in range(len(logg)):
+        ax2.scatter(fsed[i], parameter[i],
+                    color=logg_colors(norm_g(logg[i])), marker='x')
+        
+    # creating line on the second plot
+    m, b = np.polyfit(fsed, parameter, 1)
+    ax2.plot(fsed, fsed*m + b, color='k',
+             linewidth=.7, alpha=0.5, label=f'{m:.2}x + {b:.2}')
+    # writing pearson r value of the line at the top of each graph
+    r2 = stats.pearsonr(fsed, parameter)[0]
+    ax2.annotate(f"r = {r2:.2}", xy=(1, 0.99),
+                 ha='right', va='top',
+                 fontsize=10,
+                 xycoords='axes fraction', color='k')
+    
+    # plotting the lines for each logg and fsed value grouping 
+    if lines:
+        for grav in logg_values:
+            m, b = np.polyfit(fsed[logg == grav], parameter[logg == grav] , 1)
+            ax2.plot(fsed, fsed*m + b, color=logg_colors(norm_g(grav)),
+                        linewidth=.7, alpha=.5)
+
+
+    # creating custom x-ticks 
+    ax2.set_xticks(fsed_num)
+    ax2.set_xticklabels([None for i in fsed_num])
+
+    ax2.set_ylabel(param_name)
+
 
 def plot_parameter_vs_logg_fsed(ax1, ax2, parameter, logg, fsed, param_name, lines = False):
     """
@@ -226,6 +347,7 @@ def all_parameter_plot(parameter_df, lines_TF = False, title =  'P-Voigt Paramet
 
 # plotting each doublet separately
 def all_parameter_plot_separate(parameter_df, lines_TF = False, title =  'P-Voigt Parameters vs. Gravity and Clouds'):
+
     """
     Plots Pseudo-Voigt parameters against gravity (logg) and cloud sedimentation efficiency (f_sed).
 
@@ -365,3 +487,85 @@ def all_parameter_plot_separate(parameter_df, lines_TF = False, title =  'P-Voig
     ax[0][3].set_title("Doublet 2")
     # figure title
     fig.suptitle(title, fontsize=16)
+
+
+
+def focused_correlation_plot(parameter_df, lines_TF = False, title =  'P-Voigt Parameters vs. Gravity and Clouds'):
+    """
+    Plots Pseudo-Voigt parameters against gravity (logg) and cloud sedimentation efficiency (f_sed).
+
+    This function creates a multi-panel plot with the following subplots:
+    1. Average absorption depth (A) vs. f_sed.
+    2. Average mixing parameter (η) vs. logg.
+
+    Parameters:
+    -----------
+    parameter_df : pandas.DataFrame
+        DataFrame containing the Pseudo-Voigt parameters with columns:
+        'A1', 'A2', 'FWHM1', 'FWHM2', 'logg', 'clouds'.
+    lines_TF : bool, optional
+        If True, lines are added to the plots for each color grouping in each plot providing multiple lines
+        (default is False).
+    title : str, optional
+        Title of the entire plot (default is 'P-Voigt Parameters vs. Gravity and Clouds').
+
+    Returns:
+    None
+    """
+
+    fig = plt.figure(figsize=(12, 4), constrained_layout=True)
+
+    gs = fig.add_gridspec(1, 4, width_ratios=[1, 0.05, 1, 0.05])
+
+    ax = [fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 2])]
+
+    ########################################################################################
+    # Plotting each data points
+    # A
+    plot_parameter_vs_fsed(ax[1], (parameter_df.A1 + parameter_df.A2)/2,
+                parameter_df.logg, parameter_df.clouds, r"$avg(A)$, Max Depth", lines = lines_TF)
+
+    # FWHM
+    plot_parameter_vs_logg(ax[0], (parameter_df.FWHM1 + parameter_df.FWHM2)/2,
+                parameter_df.logg, parameter_df.clouds, r"$avg(\sigma)$, FWHM", lines = lines_TF)
+
+
+    ########################################################################################
+    # labels along the bottom
+    ax[0].set_xlabel("Gravity")
+    ax[0].set_xticklabels(logg_ticks)
+
+    ax[1].set_xlabel(r"$f_{sed}$")
+    ax[1].set_xticklabels(fsed_ticks)
+
+    ########################################################################################
+    # labels along y axis
+    # Max depth
+    yticks = ax[1].get_yticks()
+    ylabel = list(np.around(yticks.copy()/1e11, 1))
+    ylabel[0] = "Stronger\nabsorption\n"
+    ylabel[-1] = "Weaker\nabsorption"
+    ax[1].set_yticks(yticks)
+    ax[1].set_yticklabels(ylabel)
+ 
+    # FWHM
+    yticks = ax[0].get_yticks()
+    ylabel = list(np.around(yticks.copy()/1e-3, 1))
+    ylabel[-1] = "Broader"
+    ylabel[0] = "Narrower"
+    ax[0].set_yticks(yticks)
+    ax[0].set_yticklabels(ylabel)
+
+    ########################################################################################
+    # Colorbar
+    cax1, cax2 = fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[0, 3]) 
+    
+    axcb = logg_colorbar(fig, cax = cax2,  orientation='vertical')
+    axcb.set_label(r'$\log(g)$', fontsize=10, rotation = -90)  
+
+    axcb = fsed_colorbar(fig, cax = cax1,  orientation='vertical')
+    axcb.set_label(r'$f_{sed}$', fontsize=10, rotation = -90)   
+
+
+    fig.suptitle( title , fontsize=16)
+    
