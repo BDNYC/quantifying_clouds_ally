@@ -8,7 +8,7 @@ import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from Doublet_Quantifier.curvefit import *
-
+from functions.seda_utils import convolve_spectrum
 
 
 def files_to_spec(files,
@@ -60,9 +60,8 @@ def files_to_spec(files,
     del data
     return data_dictionary
 
-def spec_to_parameter(data_dictionary, show_plots = False,
-                      continuum_region = [1.15, 1.19], absorption_region = [1.165, 1.183],
-                      Gaussian_stddev = 60):
+def spec_to_parameter(data_dictionary, resolution, show_plots = False,
+                      continuum_region = [1.15, 1.19], absorption_region = [1.165, 1.183]):
     """
     Convolves spectral data and fits pseudo-Voigt profiles to the spectra, returning a dictionary of convolved data
     and a DataFrame of fitted parameters.
@@ -71,12 +70,13 @@ def spec_to_parameter(data_dictionary, show_plots = False,
     data_dictionary (dict): Dictionary containing spectral data arrays. The keys are source names, and the values are
                             numpy arrays with shape (3, length), where the first row is wavelength data and the second
                             row is flux data.
+    resolution (float): resolution calculated at the center of the absorption_region.
     show_plots (bool, optional): If True, plots the fitting results for each spectrum. Default is False.
     continuum_region (list of float, optional): The wavelength range [min, max] to be used for continuum fitting.
                                                 Default is [1.15, 1.19].
     absorption_region (list of float, optional): The wavelength range [min, max] to be used for absorption fitting.
                                                  Default is [1.165, 1.183].
-    Gaussian_stddev (int, optional): Standard deviation of the Gaussian kernel used for convolution. Default is 60.
+   
 
     Returns:
     tuple: A tuple containing:
@@ -101,7 +101,7 @@ def spec_to_parameter(data_dictionary, show_plots = False,
         'source1': np.array([...]),
         'source2': np.array([...])
     }
-    df, convolve_data_dict = spec_to_parameter(data_dictionary, show_plots=True,
+    df, convolve_data_dict = spec_to_parameter(data_dictionary, resolution, show_plots=True,
                                                continuum_region=[1.14, 1.18], absorption_region=[1.165, 1.183],
                                                Gaussian_stddev=50)
     ```
@@ -118,15 +118,16 @@ def spec_to_parameter(data_dictionary, show_plots = False,
     # empty dictionary for the data to be convolved 
     convolve_data_dict = {}
     
-    # convolve kernal 
-    gauss_kernel = Gaussian1DKernel(Gaussian_stddev,  mode='center')
     
-    print("convolving and fitting spectra")
     for i, source in enumerate(data_dictionary):
-        length = len(data_dictionary[source][1, :])
+
+        lam_R = sum(absorption_region)/2 # wavelength reference to estimate the spectral resolution of the input spectrum
+        convolve_dict = convolve_spectrum(data_dictionary[source][0, :], data_dictionary[source][1, :], lam_R, resolution)
+
+        length = len(convolve_dict['wl_conv'])
         convolve_data_array = np.ones((3, length))
-        convolve_data_array[1, :] = convolve(data_dictionary[source][1, :], gauss_kernel)
-        convolve_data_array[0, :] = data_dictionary[source][0, :]
+        convolve_data_array[0, :] = convolve_dict['wl_conv']
+        convolve_data_array[1, :] = convolve_dict['flux_conv']
 
         convolve_data_dict[source] = convolve_data_array
 
@@ -136,7 +137,6 @@ def spec_to_parameter(data_dictionary, show_plots = False,
         param_list[i, :] = params_p
 
         if show_plots:
-            plt.ylim(-1.9e11, 0.2e11)
             plt.title(source)
             plt.show()
 
