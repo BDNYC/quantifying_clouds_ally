@@ -10,7 +10,7 @@ fsed_colors = pl.cm.viridis
 logg_colors = pl.cm.plasma
 
 fsed_num = [1, 2, 3, 4, 8]
-fsed_ticks = ["Cloudy", '2', '3', '4', 'Thin Clouds \n 8']
+fsed_ticks = ["Cloudy", '2', '3', '4', 'Thin \nClouds\n 8']
 fsed_bounds = [0.5, 1.5, 2.5, 3.5, 6, 9]
 
 fsed_num_w_noclouds = [1, 2, 3, 4, 8, 10]
@@ -18,7 +18,7 @@ fsed_ticks_w_noclouds = ["Cloudy", '2', '3', '4', '8', 'No \nClouds']
 fsed_bounds_w_noclouds = [0.5, 1.5, 2.5, 3.5, 6, 9, 11]
 
 logg_num = [3.5, 4, 4.5, 5, 5.5]
-logg_ticks = ['Less dense', '4', '4.5', '5', 'More dense']
+logg_ticks = ['Less \ndense', '4', '4.5', '5', 'More \ndense']
 logg_bounds = [3.25, 3.75, 4.25, 4.75, 5.25, 5.75]
 
 norm_f_w_noclouds = mpl.colors.BoundaryNorm(fsed_bounds_w_noclouds, fsed_colors.N, extend='neither')
@@ -28,31 +28,38 @@ norm_g = mpl.colors.BoundaryNorm(logg_bounds, logg_colors.N, extend='max')
 
 
 def fsed_colorbar(fig, cax = None, ax = None, orientation='vertical',
-                   shrink=1.0, aspect=20, pad=.14):
+                   shrink=1.0, aspect=20, pad=.14, fontsize = 12):
 
-    return fig.colorbar(pl.cm.ScalarMappable(norm=norm_f, cmap=fsed_colors),
+    cbar = fig.colorbar(pl.cm.ScalarMappable(norm=norm_f, cmap=fsed_colors),
                 cax=cax, ax = ax, orientation= orientation, 
-                ticks=fsed_num, format=mticker.FixedFormatter(fsed_ticks),
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
+    cbar.ax.yaxis.set_ticks(fsed_num)
+    cbar.ax.yaxis.set_ticklabels(fsed_ticks, fontsize = fontsize)
+    return cbar
 
 def fsed_colorbar_w_noclouds(fig, cax = None, ax = None, orientation='vertical',
-                   shrink=1.0, aspect=20, pad=.14):
+                   shrink=1.0, aspect=20, pad=.14,  fontsize = 12):
 
-    return fig.colorbar(pl.cm.ScalarMappable(norm=norm_f_w_noclouds, cmap=fsed_colors),
+    cbar = fig.colorbar(pl.cm.ScalarMappable(norm=norm_f_w_noclouds, cmap=fsed_colors),
                 cax=cax, ax = ax, orientation= orientation, 
-                ticks=fsed_num_w_noclouds, format=mticker.FixedFormatter(fsed_ticks_w_noclouds),
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
+    cbar.ax.yaxis.set_ticks(fsed_num_w_noclouds)
+    cbar.ax.yaxis.set_ticklabels(fsed_ticks_w_noclouds, fontsize = fontsize)
+    return cbar
     
 def logg_colorbar(fig, cax = None, ax = None, orientation='vertical',
-                  shrink=1.0, aspect=20, pad=.14):
+                  shrink=1.0, aspect=20, pad=.14, fontsize = 12):
 
-    return fig.colorbar(pl.cm.ScalarMappable(norm=norm_g, cmap=logg_colors),
+    cbar = fig.colorbar(pl.cm.ScalarMappable(norm=norm_g, cmap=logg_colors),
                 cax=cax, ax = ax, orientation= orientation,
-                ticks=logg_num,  format=mticker.FixedFormatter(logg_ticks),
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
+    cbar.ax.yaxis.set_ticks(logg_num)
+    cbar.ax.yaxis.set_ticklabels(logg_ticks, fontsize = fontsize)
+
+    return cbar
 
 def plot_parameter_vs_logg(ax1, parameter, logg, fsed, param_name, lines = False):
     """
@@ -291,7 +298,7 @@ def all_parameter_plot(parameter_df, lines_TF = False, title =  'P-Voigt Paramet
     ########################################################################################
     # Plotting each data points
     # A
-    plot_parameter_vs_logg_fsed(ax[0][0], ax[0][1], (parameter_df.A1 + parameter_df.A2)/2,
+    plot_parameter_vs_logg_fsed(ax[0][0], ax[0][1], -(parameter_df.A1 + parameter_df.A2)/2,
                 parameter_df.logg, parameter_df.clouds, r"$avg(A)$, Max Depth", lines = lines_TF)
 
     # FWHM
@@ -316,8 +323,8 @@ def all_parameter_plot(parameter_df, lines_TF = False, title =  'P-Voigt Paramet
     # Max depth
     yticks = ax[0][0].get_yticks()
     ylabel = list(yticks.copy()/1e11)
-    ylabel[0] = "Stronger\nabsorption\n"
-    ylabel[-1] = "Weaker\nabsorption"
+    ylabel[-1] = "Stronger\nabsorption\n"
+    ylabel[0] = "Weaker\nabsorption"
     ax[0][0].set_yticks(yticks)
     ax[0][0].set_yticklabels(ylabel)
     ax[0][1].set_yticks(yticks)
@@ -396,11 +403,11 @@ def all_parameter_plot_separate(parameter_df, lines_TF = False, title =  'P-Voig
     # Plotting each data points
     # A
     # doublet 1
-    plot_parameter_vs_logg_fsed(ax[0][0], ax[0][2], parameter_df.A1,
+    plot_parameter_vs_logg_fsed(ax[0][0], ax[0][2], -parameter_df.A1,
                 parameter_df.logg, parameter_df.clouds, r"$A$, Max Depth", lines = lines_TF)
 
     # doublet 2
-    plot_parameter_vs_logg_fsed(ax[0][1], ax[0][3], parameter_df.A2,
+    plot_parameter_vs_logg_fsed(ax[0][1], ax[0][3], -parameter_df.A2,
                 parameter_df.logg, parameter_df.clouds, r"", lines = lines_TF)
 
 
@@ -441,8 +448,8 @@ def all_parameter_plot_separate(parameter_df, lines_TF = False, title =  'P-Voig
     # Max depth
     yticks = ax[0][0].get_yticks()
     ylabel = list(yticks.copy()/1e11)
-    ylabel[0] = "stronger\nabsorption\n"
-    ylabel[-1] = "weaker\nabsorption"
+    ylabel[-1] = "stronger\nabsorption\n"
+    ylabel[0] = "weaker\nabsorption"
     ax[0][0].set_yticks(yticks)
     ax[0][0].set_yticklabels(ylabel)
     ax[0][1].set_yticks(yticks)  # setting ticks to none for the rest of the rows
@@ -536,7 +543,7 @@ def focused_correlation_plot(parameter_df, lines_TF = False, title =  'P-Voigt P
     ########################################################################################
     # Plotting each data points
     # A
-    plot_parameter_vs_fsed(ax[1], (parameter_df.A1 + parameter_df.A2)/2,
+    plot_parameter_vs_fsed(ax[1], -(parameter_df.A1 + parameter_df.A2)/2,
                 parameter_df.logg, parameter_df.clouds, r"$avg(A)$, Max Depth", lines = lines_TF)
 
     # FWHM
@@ -557,8 +564,8 @@ def focused_correlation_plot(parameter_df, lines_TF = False, title =  'P-Voigt P
     # Max depth
     yticks = ax[1].get_yticks()
     ylabel = list(np.around(yticks.copy()/1e11, 1))
-    ylabel[0] = "Stronger\nabsorption\n"
-    ylabel[-1] = "Weaker\nabsorption"
+    ylabel[-1] = "Stronger\nabsorption\n"
+    ylabel[0] = "Weaker\nabsorption"
     ax[1].set_yticks(yticks)
     ax[1].set_yticklabels(ylabel)
  
