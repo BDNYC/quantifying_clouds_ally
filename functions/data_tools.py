@@ -1,18 +1,20 @@
 import numpy as np
 import numpy.ma as ma
 from astropy.io import ascii
-from astropy.convolution import convolve, Gaussian1DKernel
 import pandas as pd
-import sys
-import os
+
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from Doublet_Quantifier.curvefit import *
 from functions.seda_utils import convolve_spectrum
+
+# this code is available on GitHub: github.com/BDNYC/Doublet_Quantifier
+from doublet_quantifier.curvefit import *
+
+
 
 
 def files_to_spec(files,
-                  path_to_files  = '/Users/allybaldelli/Desktop/AMNH-stuff/quantifying_clouds_ally/diamondback-data/t1500/',
+                  path_to_files,
                   wavelength_region = (1.1, 1.8)):
     """
     Reads spectral data files and organizes them into a dictionary.
@@ -137,7 +139,7 @@ def spec_to_parameter(data_dictionary, resolution, show_plots = False,
         param_list[i, :] = params_p
 
         if show_plots:
-            plt.title(source)
+            plt.title("Fitting results for g" + source)
             plt.show()
 
 

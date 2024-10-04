@@ -10,15 +10,15 @@ fsed_colors = pl.cm.viridis
 logg_colors = pl.cm.plasma
 
 fsed_num = [1, 2, 3, 4, 8]
-fsed_ticks = ["Cloudy", '2', '3', '4', 'Thin \nClouds\n 8']
+fsed_ticks = ["\n Cloudier", '2', '3', '4', 'Less \nCloudy\n 8']
 fsed_bounds = [0.5, 1.5, 2.5, 3.5, 6, 9]
 
 fsed_num_w_noclouds = [1, 2, 3, 4, 8, 10]
-fsed_ticks_w_noclouds = ["Cloudy", '2', '3', '4', '8', 'No \nClouds']
+fsed_ticks_w_noclouds = ["\n Cloudier", '2', '3', '4', '8', 'No \nClouds']
 fsed_bounds_w_noclouds = [0.5, 1.5, 2.5, 3.5, 6, 9, 11]
 
 logg_num = [3.5, 4, 4.5, 5, 5.5]
-logg_ticks = ['Less \ndense', '4', '4.5', '5', 'More \ndense']
+logg_ticks = ['Less \ndense', '4', '4.5', '5', 'Denser']
 logg_bounds = [3.25, 3.75, 4.25, 4.75, 5.25, 5.75]
 
 norm_f_w_noclouds = mpl.colors.BoundaryNorm(fsed_bounds_w_noclouds, fsed_colors.N, extend='neither')
@@ -34,8 +34,12 @@ def fsed_colorbar(fig, cax = None, ax = None, orientation='vertical',
                 cax=cax, ax = ax, orientation= orientation, 
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
-    cbar.ax.yaxis.set_ticks(fsed_num)
-    cbar.ax.yaxis.set_ticklabels(fsed_ticks, fontsize = fontsize)
+    if orientation == 'vertical':
+        cbar.ax.yaxis.set_ticks(fsed_num)
+        cbar.ax.yaxis.set_ticklabels(fsed_ticks, fontsize = fontsize)
+    else:
+        cbar.ax.xaxis.set_ticks(fsed_num)
+        cbar.ax.xaxis.set_ticklabels(fsed_ticks, fontsize = fontsize)
     return cbar
 
 def fsed_colorbar_w_noclouds(fig, cax = None, ax = None, orientation='vertical',
@@ -45,19 +49,26 @@ def fsed_colorbar_w_noclouds(fig, cax = None, ax = None, orientation='vertical',
                 cax=cax, ax = ax, orientation= orientation, 
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
-    cbar.ax.yaxis.set_ticks(fsed_num_w_noclouds)
-    cbar.ax.yaxis.set_ticklabels(fsed_ticks_w_noclouds, fontsize = fontsize)
+    if orientation == 'vertical':
+        cbar.ax.yaxis.set_ticks(fsed_num_w_noclouds)
+        cbar.ax.yaxis.set_ticklabels(fsed_ticks_w_noclouds, fontsize = fontsize)
+    else:
+        cbar.ax.xaxis.set_ticks(fsed_num_w_noclouds)
+        cbar.ax.xaxis.set_ticklabels(fsed_ticks_w_noclouds, fontsize = fontsize)
     return cbar
     
 def logg_colorbar(fig, cax = None, ax = None, orientation='vertical',
                   shrink=1.0, aspect=20, pad=.14, fontsize = 12):
-
     cbar = fig.colorbar(pl.cm.ScalarMappable(norm=norm_g, cmap=logg_colors),
                 cax=cax, ax = ax, orientation= orientation,
                 extend='neither', spacing='proportional',
                 shrink=shrink, aspect=aspect, pad=pad)
-    cbar.ax.yaxis.set_ticks(logg_num)
-    cbar.ax.yaxis.set_ticklabels(logg_ticks, fontsize = fontsize)
+    if orientation == 'vertical':
+        cbar.ax.yaxis.set_ticks(logg_num)
+        cbar.ax.yaxis.set_ticklabels(logg_ticks, fontsize = fontsize)
+    else:
+        cbar.ax.xaxis.set_ticks(logg_num)
+        cbar.ax.xaxis.set_ticklabels(logg_ticks, fontsize = fontsize)
 
     return cbar
 
@@ -290,7 +301,7 @@ def all_parameter_plot(parameter_df, lines_TF = False, title =  'P-Voigt Paramet
     None
     """
 
-    fig = plt.figure(figsize=(8, 10), constrained_layout=True)
+    fig = plt.figure(figsize=(8, 8), constrained_layout=True)
 
     gs = fig.add_gridspec(4, 2, height_ratios=[1, 1, 1, 0.05], width_ratios=[1, 1])
 
@@ -355,11 +366,11 @@ def all_parameter_plot(parameter_df, lines_TF = False, title =  'P-Voigt Paramet
     # Colorbar
     cax1 = fig.add_subplot(gs[3, 1])
     axcb = logg_colorbar(fig, cax = cax1,  orientation='horizontal')
-    axcb.set_label(r'$\log(g)$', fontsize=10)  # empty label
+    axcb.set_label(r'Surface Gravity', fontsize=10)  # empty label
 
     cax1 = fig.add_subplot(gs[3, 0])
     axcb = fsed_colorbar(fig, cax = cax1,  orientation='horizontal')
-    axcb.set_label(r'$f_{sed}$', fontsize=10)   # empty label
+    axcb.set_label(r'Cloudiness', fontsize=10)   # empty label
 
 
     fig.suptitle( title , fontsize=16)

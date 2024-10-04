@@ -5,13 +5,7 @@ import numpy as np
 import numpy.ma as ma
 from scipy import stats
 import matplotlib.ticker as mticker
-import sys
-import os
-
-mypath = '/Users/allybaldelli/Desktop/AMNH-stuff/quantifying_clouds_ally'
-sys.path.append(os.path.abspath(mypath))
-
-from functions.plotting_tools import *
+from plotting_tools import *
 
 
 
