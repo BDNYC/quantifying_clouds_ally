@@ -8,6 +8,8 @@ import matplotlib.ticker as mticker
 # color mapping
 fsed_colors = pl.cm.viridis
 logg_colors = pl.cm.plasma
+rainbow = plt.cm.Spectral_r
+bw_cmap = plt.cm.binary
 
 fsed_num = [1, 2, 3, 4, 8]
 fsed_ticks = ["\n Cloudier", '2', '3', '4', 'Less \nCloudy\n 8']
@@ -21,10 +23,37 @@ logg_num = [3.5, 4, 4.5, 5, 5.5]
 logg_ticks = ['Less \ndense', '4', '4.5', '5', 'Denser']
 logg_bounds = [3.25, 3.75, 4.25, 4.75, 5.25, 5.75]
 
+
+# Filippazzo 2015 spectral type to temperature conversion
+# https://iopscience.iop.org/article/10.1088/0004-637X/810/2/158/pdf
+# integer values 6-29 correspond to spectral types M6-T9
+# L0:10, L1:11, L2:12, L3:13, L4:14, L5:15, L6:16, L7:17, L8:18, L9:19
+Teff = lambda x: 4.747e3 -7.005e2*x + 1.155e2*(x**2) - 1.191e1*(x**3) +6.318e-1*(x**4) -1.606e-2*(x**5) +1.546e-4*(x**6)
+
+temp_num =   [ 1600, 1800, 2000, 2200, 2400]
+temp_ticks = ['1600 K', '1800 K', '2000 K', '2200 K','2400 K']
+temp_bounds = [1550, 1650, 1750, 1850, 1950, 2050, 2150, 2250, 2350, 2450]
+spec_types = ["L5", "L4", "L3", "L2", "L1", "L0", " M9"]
+spec_ticks = [Teff(type) for type in range(15, 9-1, -1)]
+
+#normalizing colorbars for each parameter
 norm_f_w_noclouds = mpl.colors.BoundaryNorm(fsed_bounds_w_noclouds, fsed_colors.N, extend='neither')
 norm_f = mpl.colors.BoundaryNorm(fsed_bounds, fsed_colors.N, extend='neither')
 norm_g = mpl.colors.BoundaryNorm(logg_bounds, logg_colors.N, extend='max')
+norm_temp = mpl.colors.BoundaryNorm(temp_bounds, rainbow.N, extend='neither')
+norm_bw_logg = mpl.colors.BoundaryNorm(logg_bounds, logg_colors.N, extend='min')
 
+def temp_color(temp):
+    return rainbow(norm_temp(temp))
+
+def logg_bw_color(logg):
+    return bw_cmap(norm_bw_logg(logg))
+
+def fsed_color(fsed):
+    return fsed_colors(norm_f(fsed))
+
+def logg_color(logg):
+    return logg_colors(norm_g(logg))
 
 
 def fsed_colorbar(fig, cax = None, ax = None, orientation='vertical',
@@ -72,6 +101,61 @@ def logg_colorbar(fig, cax = None, ax = None, orientation='vertical',
 
     return cbar
 
+
+def logg_bw_colorbar(fig, cax = None, ax = None, orientation='vertical',
+                 shrink=1.0, aspect=20, pad=.14, fontsize = 12):
+
+    cbar = fig.colorbar(pl.cm.ScalarMappable(norm=norm_bw, cmap=bw_cmap),
+                cax=cax, ax = ax, orientation= orientation,
+                extend='neither', spacing='proportional',
+                shrink=shrink, aspect=aspect, pad=pad)
+    cbar.ax.yaxis.set_ticks(logg_num)
+    cbar.ax.yaxis.set_ticklabels(logg_ticks, fontsize = fontsize)
+
+    return cbar
+
+
+
+def temp_colorbar(fig, cax = None, ax = None, orientation='vertical',
+                  shrink=1.0, aspect=20, pad=.14, fontsize = 12, labels = False, labelpad = 0.1):
+    cbar = fig.colorbar(pl.cm.ScalarMappable(norm=norm_temp, cmap=rainbow),
+                cax=cax, ax = ax, orientation= orientation,
+                extend='neither', spacing='proportional',
+                shrink=shrink, aspect=aspect, pad=pad)
+    
+    
+    if orientation == 'vertical':
+        # Add ticks and labels to both sides of the color bar
+        cbar.ax.yaxis.set_ticks_position('both')
+
+        # Set ticks and labels for the left side
+        left_ticks = spec_ticks
+        left_tick_labels = spec_types
+        cbar.ax.yaxis.set_ticks(left_ticks)
+        cbar.ax.yaxis.set_ticklabels(left_tick_labels, fontsize = fontsize)
+        cbar.ax.yaxis.set_label_position('left')
+        if labels:
+            cbar.set_label("Spectral Type", fontsize = fontsize + 1, labelpad=labelpad)
+
+        # Create secondary axis for the right side ticks
+        cbar_ax_secondary = cbar.ax.twinx()
+        cbar_ax_secondary.set_ylim(cbar.ax.get_ylim())
+
+
+        # Set ticks and labels for the right side
+        right_ticks = temp_num 
+        right_tick_labels = temp_num
+        cbar_ax_secondary.set_yticks(right_ticks)
+        cbar_ax_secondary.set_yticklabels(right_tick_labels, fontsize = fontsize -1)
+        cbar_ax_secondary.yaxis.set_label_position('right')
+        if labels:
+            cbar_ax_secondary.set_ylabel("Temperature (K)", fontsize = fontsize + 1)
+    else:
+        print("Horizontal colorbar not implemented yet")
+
+    return cbar
+    return cbar
+    
 def plot_parameter_vs_logg(ax1, parameter, logg, fsed, param_name, lines = False):
     """
     Plots a given parameter against two variables, `logg` and `fsed`, on separate matplotlib axes.
@@ -192,7 +276,6 @@ def plot_parameter_vs_fsed(ax2, parameter, logg, fsed, param_name, lines = False
     ax2.set_xticklabels([None for i in fsed_num])
 
     ax2.set_ylabel(param_name)
-
 
 def plot_parameter_vs_logg_fsed(ax1, ax2, parameter, logg, fsed, param_name, lines = False):
     """
